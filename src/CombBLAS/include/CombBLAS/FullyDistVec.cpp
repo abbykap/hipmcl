@@ -82,8 +82,6 @@ FullyDistVec<IT, NT>::FullyDistVec ( const FullyDistVec<ITRHS, NTRHS>& rhs )
 /**
   * Initialize a FullyDistVec with a separate vector from each processor
   * Optimizes for the common case where all fillarr's in separate processors are of the same size
-  * \pre{fillarr sizes exactly follow how CombBLAS would distribute a FullyDistVec}
-  * \warning{This should only be used by an expert user who fully understands CombBLAS's FullyDistVec distribution}
   */
 template <class IT, class NT>
 FullyDistVec<IT, NT>::FullyDistVec ( const std::vector<NT> & fillarr, std::shared_ptr<CommGrid> grid ) 
@@ -99,16 +97,9 @@ FullyDistVec<IT, NT>::FullyDistVec ( const std::vector<NT> & fillarr, std::share
 	MPI_Allgather(MPI_IN_PLACE, 1, MPIType<IT>(), sizes, 1, MPIType<IT>(), World);
 	glen = std::accumulate(sizes, sizes+nprocs, static_cast<IT>(0));
 
-	bool unique = true;
-	for(int i=0; i<nprocs-1; ++i)
-	{
-		if(sizes[i] != sizes[i+1])
-		{
-			unique = false;
-			break;
-		}
-	}
-	if(unique)
+	std::vector<IT> uniq_sizes;
+	std::unique_copy(sizes, sizes+nprocs, std::back_inserter(uniq_sizes));
+	if(uniq_sizes.size() == 1)
 	{
 		arr = fillarr;
 	}
@@ -120,7 +111,8 @@ FullyDistVec<IT, NT>::FullyDistVec ( const std::vector<NT> & fillarr, std::share
 		// We can call the Owner/MyLocLength/LengthUntil functions (to infer future distribution)
 		
 		// rebalance/redistribute
-		int * sendcnt = new int[nprocs](); // no need to std::fill as this type of new[] with () will initialize PODs correctly
+		int * sendcnt = new int[nprocs];
+		std::fill(sendcnt, sendcnt+nprocs, 0);
 		for(IT i=0; i<nsize; ++i)
 		{
 			IT locind;
@@ -140,13 +132,15 @@ FullyDistVec<IT, NT>::FullyDistVec ( const std::vector<NT> & fillarr, std::share
 			rdispls[i+1] = rdispls[i] + recvcnt[i];
 		}
 		IT totrecv = std::accumulate(recvcnt,recvcnt+nprocs, static_cast<IT>(0));
-		arr.resize(totrecv);
+		std::vector<IT> recvbuf(totrecv);
 		
 		// data is already in the right order in found.arr
-		MPI_Alltoallv(fillarr.data(), sendcnt, sdispls, MPIType<NT>(), arr.data(), recvcnt, rdispls, MPIType<NT>(), World);
+		MPI_Alltoallv(&(arr[0]), sendcnt, sdispls, MPIType<IT>(), &(recvbuf[0]), recvcnt, rdispls, MPIType<IT>(), World);
+		arr.swap(recvbuf);
 		DeleteAll(sendcnt, recvcnt, sdispls, rdispls);
 	}
-	delete [] sizes;	
+	delete [] sizes;
+	
 }
 
 

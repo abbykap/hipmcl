@@ -481,11 +481,6 @@ void generic_gespmv (const SpMat<IU,NUM,DER> & A, const int32_t * indx, const IV
 template<typename IU>
 void BooleanRowSplit(SpDCCols<IU, bool> & A, int numsplits)
 {
-    if(A.m < numsplits)
-    {
-        std::cerr<< "Warning: Matrix is too small to be splitted for multithreading" << std::endl;
-        return;
-    }
 	A.splits = numsplits;
 	IU perpiece = A.m / A.splits;
 	std::vector<IU> prevcolids(A.splits, -1);	// previous column id's are set to -1
@@ -521,36 +516,29 @@ void BooleanRowSplit(SpDCCols<IU, bool> & A, int numsplits)
 	for(int i=0; i< A.splits; ++i)
 	{
 		sort(colrowpairs[i].begin(), colrowpairs[i].end());	// sort w.r.t. columns
-        if(nzcs[i]>0)
-        {
-            A.dcscarr[i] = new Dcsc<IU,bool>(nnzs[i],nzcs[i]);
-            std::fill(A.dcscarr[i]->numx, A.dcscarr[i]->numx+nnzs[i], static_cast<bool>(1));
-            IU curnzc = 0;                // number of nonzero columns constructed so far
-            IU cindex = colrowpairs[i][0].first;
-            IU rindex = colrowpairs[i][0].second;
-            
-            A.dcscarr[i]->ir[0] = rindex;
-            A.dcscarr[i]->jc[curnzc] = cindex;
-            A.dcscarr[i]->cp[curnzc++] = 0;
-            
-            for(IU j=1; j<nnzs[i]; ++j)
-            {
-                cindex = colrowpairs[i][j].first;
-                rindex = colrowpairs[i][j].second;
-                
-                A.dcscarr[i]->ir[j] = rindex;
-                if(cindex != A.dcscarr[i]->jc[curnzc-1])
-                {
-                    A.dcscarr[i]->jc[curnzc] = cindex;
-                    A.dcscarr[i]->cp[curnzc++] = j;
-                }
-            }
-            A.dcscarr[i]->cp[curnzc] = nnzs[i];
-        }
-        else
-        {
-            A.dcscarr[i] = new Dcsc<IU,bool>();
-        }
+		A.dcscarr[i] = new Dcsc<IU,bool>(nnzs[i],nzcs[i]);	
+		std::fill(A.dcscarr[i]->numx, A.dcscarr[i]->numx+nnzs[i], static_cast<bool>(1));
+		IU curnzc = 0;				// number of nonzero columns constructed so far
+		IU cindex = colrowpairs[i][0].first;
+		IU rindex = colrowpairs[i][0].second;
+
+		A.dcscarr[i]->ir[0] = rindex;
+		A.dcscarr[i]->jc[curnzc] = cindex;
+		A.dcscarr[i]->cp[curnzc++] = 0; 
+
+		for(IU j=1; j<nnzs[i]; ++j)
+		{
+			cindex = colrowpairs[i][j].first;
+			rindex = colrowpairs[i][j].second;
+
+			A.dcscarr[i]->ir[j] = rindex;
+			if(cindex != A.dcscarr[i]->jc[curnzc-1])
+			{
+				A.dcscarr[i]->jc[curnzc] = cindex;
+				A.dcscarr[i]->cp[curnzc++] = j;
+			}
+		}
+		A.dcscarr[i]->cp[curnzc] = nnzs[i];
 	}
 }
 
