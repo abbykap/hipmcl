@@ -1,6 +1,9 @@
 #ifndef _mtSpGEMM_h
 #define _mtSpGEMM_h
 
+#include <limits>
+#include <random>
+
 #include "CombBLAS.h"
 
 namespace combblas {
@@ -103,11 +106,14 @@ SpTuples<IT, NTO> * LocalSpGEMM
     }
 #endif
    
-    IT* colnnzC = estimateNNZ(A, B, aux,false);	// don't free aux	
+    IT* colnnzC = estimateNNZ(A, B);
     IT* colptrC = prefixsum<IT>(colnnzC, Bdcsc->nzc, numThreads);
     delete [] colnnzC;
     IT nnzc = colptrC[Bdcsc->nzc];
     std::tuple<IT,IT,NTO> * tuplesC = static_cast<std::tuple<IT,IT,NTO> *> (::operator new (sizeof(std::tuple<IT,IT,NTO>[nnzc])));
+	
+	
+
 	
     // thread private space for heap and colinds
     std::vector<std::vector< std::pair<IT,IT>>> colindsVec(numThreads);
@@ -119,11 +125,11 @@ SpTuples<IT, NTO> * LocalSpGEMM
         globalheapVec[i].resize(nnzA/numThreads);
     }
 
-    size_t Bnzc = (size_t) Bdcsc->nzc;
+
 #ifdef THREADED
 #pragma omp parallel for
 #endif
-    for(size_t i=0; i < Bnzc; ++i)
+    for(int i=0; i < Bdcsc->nzc; ++i)
     {
         size_t nnzcolB = Bdcsc->cp[i+1] - Bdcsc->cp[i]; //nnz in the current column of B
 		int myThread = 0;
@@ -145,7 +151,7 @@ SpTuples<IT, NTO> * LocalSpGEMM
         IT hsize = 0;
         
         
-        for(size_t j = 0; j < nnzcolB; ++j)		// create the initial heap
+        for(IT j = 0; (unsigned)j < nnzcolB; ++j)		// create the initial heap
         {
             if(colinds[j].first != colinds[j].second)	// current != end
             {
@@ -214,7 +220,8 @@ template <typename SR, typename NTO, typename IT, typename NT1, typename NT2>
 SpTuples<IT, NTO> * LocalHybridSpGEMM
 (const SpDCCols<IT, NT1> & A,
  const SpDCCols<IT, NT2> & B,
- bool clearA, bool clearB)
+ bool clearA, bool clearB,
+ std::ofstream *lfile = NULL)
 {
 
     double t0=MPI_Wtime();
@@ -245,12 +252,14 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
     }
 #endif
    
-    // std::cout << "numThreads: " << numThreads << std::endl;
+    // std::cout << "localHybridSpGEMM numThreads: " << numThreads << std::endl;
 
     IT* flopC = estimateFLOP(A, B);
     IT* flopptr = prefixsum<IT>(flopC, Bdcsc->nzc, numThreads);
     IT flop = flopptr[Bdcsc->nzc];
-    // std::cout << "FLOP of A * B is " << flop << std::endl;
+
+	if (lfile)
+		(*lfile) << "FLOP of A * B is " << flop << std::endl;
 
     IT* colnnzC = estimateNNZ_Hash(A, B, flopC);
     IT* colptrC = prefixsum<IT>(colnnzC, Bdcsc->nzc, numThreads);
@@ -259,8 +268,11 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
     IT nnzc = colptrC[Bdcsc->nzc];
     double compression_ratio = (double)flop / nnzc;
 
-    // std::cout << "NNZ of A * B is " << nnzc << std::endl;
-    // std::cout << "Compression ratio is " << compression_ratio << std::endl;
+	if (lfile)
+	{
+		(*lfile) << "NNZ of A * B is " << nnzc << std::endl;
+      	(*lfile) << "Compression ratio is " << compression_ratio << std::endl;
+	}
 
     std::tuple<IT,IT,NTO> * tuplesC = static_cast<std::tuple<IT,IT,NTO> *> (::operator new (sizeof(std::tuple<IT,IT,NTO>[nnzc])));
 	
@@ -277,7 +289,7 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
 #ifdef THREADED
 #pragma omp parallel for
 #endif
-    for(size_t i=0; i < Bdcsc->nzc; ++i)
+    for(int i=0; i < Bdcsc->nzc; ++i)
     {
         size_t nnzcolB = Bdcsc->cp[i+1] - Bdcsc->cp[i]; //nnz in the current column of B
         int myThread = 0;
@@ -295,15 +307,15 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
         Adcsc->FillColInds(Bdcsc->ir + Bdcsc->cp[i], nnzcolB, colindsVec[myThread], aux, csize);
         std::pair<IT,IT> * colinds = colindsVec[myThread].data();
 
-        double cr = static_cast<double>(flopptr[i+1] - flopptr[i]) / (colptrC[i+1] - colptrC[i]);
-        if (cr < 2.0) // Heap Algorithm
+        double cr = double(flopptr[i+1] - flopptr[i]) / (colptrC[i+1] - colptrC[i]);
+        if (cr < 0.0) // Heap Algorithm
         {
             std::vector<HeapEntry<IT,NT1>> globalheapVec(nnzcolB);
             HeapEntry<IT, NT1> * wset = globalheapVec.data();
             
             IT hsize = 0;
         
-            for(size_t j = 0; j < nnzcolB; ++j)		// create the initial heap
+            for(IT j = 0; (unsigned)j < nnzcolB; ++j)		// create the initial heap
             {
                 if(colinds[j].first != colinds[j].second)	// current != end
                 {
@@ -346,34 +358,34 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
         
         else // Hash Algorithm
         {
-	// #pragma omp atomic
-	// 	hashSelected++;
+// #pragma omp atomic
+//             hashSelected++;
             const IT minHashTableSize = 16;
             const IT hashScale = 107;
             size_t nnzcolC = colptrC[i+1] - colptrC[i]; //nnz in the current column of C (=Output)
 
-            size_t ht_size = minHashTableSize;
+            IT ht_size = minHashTableSize;
             while(ht_size < nnzcolC) //ht_size is set as 2^n
             {
                 ht_size <<= 1;
             }
-            std::vector< std::pair<IT,NTO>> globalHashVec(ht_size);
+            std::vector< std::pair<IT,NT1>> globalHashVec(ht_size);
 
             // colinds.first vector keeps indices to A.cp, i.e. it dereferences "colnums" vector (above),
             // colinds.second vector keeps the end indices (i.e. it gives the index to the last valid element of A.cpnack)
             
             // Initialize hash tables
-            for(size_t j=0; j < ht_size; ++j)
+            for(IT j=0; (unsigned)j < ht_size; ++j)
             {
                 globalHashVec[j].first = -1;
             }
             
             // Multiply and add on Hash table
-            for (size_t j=0; j < nnzcolB; ++j)
+            for (IT j=0; (unsigned)j < nnzcolB; ++j)
             {
                 IT t_bcol = Bdcsc->ir[Bdcsc->cp[i] + j];
                 NT2 t_bval = Bdcsc->numx[Bdcsc->cp[i] + j];
-                for (IT k = colinds[j].first; k < colinds[j].second; ++k)
+                for (IT k = colinds[j].first; (unsigned)k < colinds[j].second; ++k)
                 {
                     NTO mrhs = SR::multiply(Adcsc->numx[k], t_bval);
                     IT key = Adcsc->ir[k];
@@ -399,18 +411,18 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
                 }
             }
             // gather non-zero elements from hash table, and then sort them by row indices
-            size_t index = 0;
-            for (size_t j=0; j < ht_size; ++j)
+            IT index = 0;
+            for (IT j=0; j < ht_size; ++j)
             {
                 if (globalHashVec[j].first != -1)
                 {
                     globalHashVec[index++] = globalHashVec[j];
                 }
             }
-            std::sort(globalHashVec.begin(), globalHashVec.begin() + index, sort_less<IT, NTO>);
+            std::sort(globalHashVec.begin(), globalHashVec.begin() + index, sort_less<IT, NT1>);
 
             IT curptr = colptrC[i];
-            for (size_t j=0; j < index; ++j)
+            for (IT j=0; j < index; ++j)
             {
                 tuplesC[curptr++]= std::make_tuple(globalHashVec[j].first, Bdcsc->jc[i], globalHashVec[j].second);
             }
@@ -438,7 +450,7 @@ SpTuples<IT, NTO> * LocalHybridSpGEMM
 
 // estimate space for result of SpGEMM
 template <typename IT, typename NT1, typename NT2>
-IT* estimateNNZ(const SpDCCols<IT, NT1> & A,const SpDCCols<IT, NT2> & B, IT * aux = nullptr, bool freeaux = true)
+IT* estimateNNZ(const SpDCCols<IT, NT1> & A,const SpDCCols<IT, NT2> & B)
 {
     IT nnzA = A.getnnz();
     if(A.isZero() || B.isZero())
@@ -451,10 +463,8 @@ IT* estimateNNZ(const SpDCCols<IT, NT1> & A,const SpDCCols<IT, NT2> & B, IT * au
     
     float cf  = static_cast<float>(A.getncol()+1) / static_cast<float>(Adcsc->nzc);
     IT csize = static_cast<IT>(ceil(cf));   // chunk size
-    if(aux == nullptr)
-    {
-	    Adcsc->ConstructAux(A.getncol(), aux);
-    }
+    IT * aux;
+    Adcsc->ConstructAux(A.getncol(), aux);
 	
 	
     int numThreads = 1;
@@ -545,7 +555,7 @@ IT* estimateNNZ(const SpDCCols<IT, NT1> & A,const SpDCCols<IT, NT2> & B, IT * au
         }
     }
     
-    if (freeaux) delete [] aux;
+    delete [] aux;
     return colnnzC;
 }
 
@@ -664,23 +674,24 @@ IT* estimateNNZ_Hash(const SpDCCols<IT, NT1> & A,const SpDCCols<IT, NT2> & B, co
     return colnnzC;
 }
 
+
+
 // sampling-based nnz estimation (within SUMMA)
 template <typename IT, typename NT1, typename NT2>
 int64_t
-estimateNNZ_sampling(
-    const SpDCCols<IT, NT1> &A,
-	const SpDCCols<IT, NT2> &B,
-	int						 nrounds = 5
-	)
+estimateNNZ_sampling(const SpDCCols<IT, NT1> &A,
+					 const SpDCCols<IT, NT2> &B,
+					 int nrounds
+					 )
 {
 	IT nnzA = A.getnnz();
     if (A.isZero() || B.isZero())
         return 0;
 
-	Dcsc<IT,NT1>    *Adcsc	 = A.GetDCSC();
-    Dcsc<IT,NT2>    *Bdcsc	 = B.GetDCSC();
-	float			 lambda	 = 1.0f;
-	float			 usedmem = 0.0f;
+	Dcsc<IT,NT1>*	 Adcsc	 = A.GetDCSC();
+    Dcsc<IT,NT2>*	 Bdcsc	 = B.GetDCSC();
+	float			 lambda	 = 1.0;
+	float			 usedmem = 0.0;
 	IT				 m		 = A.getnrow();
 	IT				 p		 = A.getncol();
 	float			*samples_init, *samples_mid, *samples_final;
@@ -696,7 +707,12 @@ estimateNNZ_sampling(
 	#endif
 	{
 		nthds = omp_get_num_threads();
-	}	
+	}
+
+	// int myrank;
+	// MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+	// if (myrank == 0)
+	// 	std::cout << "#threads " << nthds << "\n";
 
 	#ifdef THREADED
 	#pragma omp parallel
@@ -705,10 +721,17 @@ estimateNNZ_sampling(
 		std::default_random_engine gen;
 		std::exponential_distribution<float> exp_dist(lambda);
 
+		int tid = 0;
 		#ifdef THREADED
-		#pragma omp parallel for
+        tid = omp_get_thread_num();
 		#endif
-		for (IT i = 0; i < m * nrounds; ++i)
+
+		IT sz = (m*nrounds) / nthds;
+		IT beg = tid * sz;
+		IT end = (tid != nthds - 1)
+			? ((tid + 1) * sz) : (m * nrounds);		
+		
+		for (IT i = beg; i < end; ++i)
 			samples_init[i] = exp_dist(gen);
 	}
 
@@ -739,11 +762,10 @@ estimateNNZ_sampling(
 
 	free(samples_init);
 
-	samples_final = (float *) malloc(B.getnzc() * nrounds *
-									 sizeof(*samples_final));
+	samples_final = (float *) malloc(B.getnzc() * nrounds * sizeof(*samples_final));
 	colest		  = (float *) malloc(B.getnzc() * sizeof(*colest));
 
-	float nnzest = 0.0f;
+	float nnzest = 0.0;
 	
 	#ifdef THREADED
 	#pragma omp parallel for reduction (+:nnzest)
@@ -770,7 +792,7 @@ estimateNNZ_sampling(
 			}
 		}
 
-		colest[i] = 0.0f;
+		colest[i] = 0.0;
 		for (IT k = beg_final; k < beg_final + nrounds; ++k)
 			colest[i] += samples_final[k];
 		colest[i] = static_cast<float>(nrounds - 1) / colest[i];
@@ -784,6 +806,145 @@ estimateNNZ_sampling(
 	
 	return static_cast<int64_t>(nnzest);
 }
+
+
+
+#ifdef __ALTIVEC__
+template <typename IT, typename NT1, typename NT2>
+int64_t
+estimateNNZ_sampling_v(const SpDCCols<IT, NT1> &A,
+					   const SpDCCols<IT, NT2> &B,
+					   int nrounds
+					   )
+{
+	IT nnzA = A.getnnz();
+    if (A.isZero() || B.isZero())
+        return 0;
+
+	Dcsc<IT,NT1>*	 Adcsc	 = A.GetDCSC();
+    Dcsc<IT,NT2>*	 Bdcsc	 = B.GetDCSC();
+	float			 lambda	 = 1.0;
+	float			 usedmem = 0.0;
+	IT				 m		 = A.getnrow();
+	IT				 p		 = A.getncol();
+	float			*samples_init, *samples_mid, *samples_final;
+	float			*colest;
+
+	const int MAX_VEC_CNT = 4;
+	assert (nrounds <= MAX_VEC_CNT * 4);
+	int nvecs = (nrounds + 3) / 4;
+
+	// samples
+	samples_init = (float *) malloc(m * nrounds * sizeof(*samples_init));
+	samples_mid	 = (float *) malloc(p * nrounds * sizeof(*samples_mid));
+
+	int nthds = 1;
+	#ifdef THREADED
+	#pragma omp parallel
+	#endif
+	{
+		nthds = omp_get_num_threads();
+	}
+
+	__vector float v1[nvecs * nthds];
+	__vector float v2[nvecs * nthds];
+
+	#ifdef THREADED
+	#pragma omp parallel
+	#endif
+	{
+		std::default_random_engine gen;
+		std::exponential_distribution<float> exp_dist(lambda);
+
+		#ifdef THREADED
+		#pragma omp parallel for
+		#endif
+		for (IT i = 0; i < m * nrounds; ++i)
+			samples_init[i] = exp_dist(gen);
+	}
+
+	#ifdef THREADED
+	#pragma omp parallel for
+	#endif
+	for (IT i = 0; i < p * nrounds; ++i)
+		samples_mid[i] = std::numeric_limits<float>::max();
+
+	#ifdef THREADED
+	#pragma omp parallel for
+	#endif
+	for (IT i = 0; i < Adcsc->nzc; ++i)
+	{
+		IT	col		= Adcsc->jc[i];
+		IT	beg_mid = col * nrounds;
+
+		// load mid to vector array
+	
+		for (IT j = Adcsc->cp[i]; j < Adcsc->cp[i + 1]; ++j)
+		{
+			IT	row		 = Adcsc->ir[j];
+			IT	beg_init = row * nrounds;
+
+			// load init to vector array
+			// take min of vecs
+	
+			for (int k = 0; k < nrounds; ++k)
+			{
+				if (samples_init[beg_init + k] < samples_mid[beg_mid + k])
+					samples_mid[beg_mid + k] = samples_init[beg_init + k];
+			}
+		}
+
+		// write back to mid array from mid vectors
+	}
+
+	free(samples_init);
+
+	samples_final = (float *) malloc(B.getnzc() * nrounds * sizeof(*samples_final));
+	colest		  = (float *) malloc(B.getnzc() * sizeof(*colest));
+
+	float nnzest = 0.0;
+	
+	#ifdef THREADED
+	#pragma omp parallel for reduction (+:nnzest)
+	#endif
+	for (IT i = 0; i < Bdcsc->nzc; ++i)
+	{
+		int tid = 0;
+		#ifdef THREADED
+        tid = omp_get_thread_num();
+		#endif
+
+		IT beg_final = i * nrounds;
+		for (IT k = beg_final; k < beg_final + nrounds; ++k)
+			samples_final[k] = std::numeric_limits<float>::max();
+		
+		for (IT j = Bdcsc->cp[i]; j < Bdcsc->cp[i + 1]; ++j)
+		{
+			IT	row		= Bdcsc->ir[j];
+			IT	beg_mid = row * nrounds;
+			for (int k = 0; k < nrounds; ++k)
+			{
+				if (samples_mid[beg_mid + k] < samples_final[beg_final + k])
+					samples_final[beg_final + k] = samples_mid[beg_mid + k];
+			}
+		}
+
+		colest[i] = 0.0;
+		for (IT k = beg_final; k < beg_final + nrounds; ++k)
+			colest[i] += samples_final[k];
+		colest[i] = static_cast<float>(nrounds - 1) / colest[i];
+
+		nnzest += colest[i];
+	}
+
+	free(samples_mid);
+	free(samples_final);
+	free(colest);
+	
+	return static_cast<int64_t>(nnzest);
+}
+#endif
+
 
 // estimate the number of floating point operations of SpGEMM
 template <typename IT, typename NT1, typename NT2>
