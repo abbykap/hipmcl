@@ -212,14 +212,6 @@ public:
     
     void PrintInfo() const;
 
-
-	template <typename UnaryOperation,
-			  typename GlobalIT>
-	SpCCols<IT, NT> *
-	PruneI (UnaryOperation unary_op, bool inPlace,
-			GlobalIT rowOffset, GlobalIT colOffset);
-	
-
 private:
     
     void SubPrintInfo(Csc<IT,NT> * mycsc) const;
