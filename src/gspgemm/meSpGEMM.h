@@ -447,45 +447,44 @@ MemEfficientSpGEMMg (
 	}
 	flops /= stages;
 	cf	  /= stages;
-	if (perProcessMemory == 0)
- 	{
-		if (local_spgemm == LSPG_HYBRID)
+	if (local_spgemm == LSPG_HYBRID)
+	{
+		local_spgemm = LSPG_NSPARSE;
+		if (flops / phases < (2 * 1e6))
+			local_spgemm = LSPG_CPU;
+		else if (cf <= 3)
 		{
-			if (iter < 10)
-				local_spgemm = LSPG_NSPARSE;
-			else
-				local_spgemm = LSPG_CPU;
+			// local_spgemm = LSPG_RMERGE2;
+			local_spgemm = LSPG_CPU;
 		}
+		
+		#ifdef LOG_GNRL_ME_SPGEMM
+		lfile << "local hybrid spgemm " <<
+			(local_spgemm == LSPG_CPU ? "cpu" :
+			 (local_spgemm == LSPG_RMERGE2 ? "gpu_rmerge2" :
+			  (local_spgemm == LSPG_NSPARSE ? "gpu_nsparse" : "N/A")))
+			  << std::endl;
+		#endif
+
+		std::string info = std::string("local hybrid spgemm ") +
+			(local_spgemm == LSPG_CPU ? "cpu" :
+			 (local_spgemm == LSPG_RMERGE2 ? "gpu_rmerge2" :
+			  (local_spgemm == LSPG_NSPARSE ? "gpu_nsparse" : "N/A"))) +
+			+ " cf " + std::to_string(cf) +
+			+ " flops " + std::to_string(flops) + std::string("\n");
+		combblas::SpParHelper::Print(info);
 	}
 	else
 	{
-		if (local_spgemm == LSPG_HYBRID)
-		{
-			local_spgemm = LSPG_NSPARSE;
-			if (flops / phases < (2 * 1e6))
-				local_spgemm = LSPG_CPU;
-			else if (cf <= 3)
-			{
-				// local_spgemm = LSPG_RMERGE2;
-				local_spgemm = LSPG_CPU;
-			}
-
-			#ifdef LOG_GNRL_ME_SPGEMM
-			lfile << "local hybrid spgemm " <<
-				(local_spgemm == LSPG_CPU ? "cpu" :
-				 (local_spgemm == LSPG_RMERGE2 ? "gpu_rmerge2" :
-				  (local_spgemm == LSPG_NSPARSE ? "gpu_nsparse" : "N/A")))
-				  << std::endl;
-			#endif
-		}
+		std::string info = std::string("spgemm specified ") +
+			(local_spgemm == LSPG_CPU ? "cpu" :
+			 (local_spgemm == LSPG_RMERGE2 ? "gpu_rmerge2" :
+			  (local_spgemm == LSPG_NSPARSE ? "gpu_nsparse" : "N/A"))) +
+			+ " cf " + std::to_string(cf) +
+			+ " flops " + std::to_string(flops) + std::string("\n");
+		combblas::SpParHelper::Print(info);
 	}
-
-	if (myrank == 0)
-		std::cout << "local hybrid spgemm at iter " << iter << ": " <<
-				(local_spgemm == LSPG_CPU ? "cpu" :
-				 (local_spgemm == LSPG_RMERGE2 ? "gpu_rmerge2" :
-				  (local_spgemm == LSPG_NSPARSE ? "gpu_nsparse" : "N/A")))
-				  << std::endl;
+		
 
 	LIA C_m = A.seqptr()->getnrow();
     LIB C_n = B.seqptr()->getncol();

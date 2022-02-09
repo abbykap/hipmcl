@@ -6,17 +6,17 @@
 
 #IncludeRegexTransform: 
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.c
 btrd_binomial_distribution.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.h
 math.h
 -
 stddef.h
 -
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.c
 stdlib.h
 -
 stdint.h
@@ -26,13 +26,13 @@ assert.h
 inttypes.h
 -
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 btrd_binomial_distribution.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/btrd_binomial_distribution.h
 graph_generator.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.h
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/make_graph.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/make_graph.c
 stdlib.h
 -
 stdint.h
@@ -54,29 +54,29 @@ mpi.h
 omp.h
 -
 graph_generator.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.h
 permutation_gen.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
 apply_permutation_mpi.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/apply_permutation_mpi.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/apply_permutation_mpi.h
 scramble_edges.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/scramble_edges.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/scramble_edges.h
 utils.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/utils.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/utils.h
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/mrg_transitions.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/mrg_transitions.c
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/permutation_gen.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/permutation_gen.c
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 graph_generator.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.h
 permutation_gen.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
 utils.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/utils.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/utils.h
 stdint.h
 -
 assert.h
@@ -94,19 +94,19 @@ mpi.h
 omp.h
 -
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/scramble_edges.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/scramble_edges.c
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 graph_generator.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.h
 permutation_gen.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
 apply_permutation_mpi.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/apply_permutation_mpi.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/apply_permutation_mpi.h
 scramble_edges.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/scramble_edges.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/scramble_edges.h
 utils.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/utils.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/utils.h
 stdint.h
 -
 assert.h
@@ -124,7 +124,7 @@ mpi.h
 omp.h
 -
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.c
 stdint.h
 -
 stdlib.h
@@ -134,17 +134,17 @@ stdio.h
 inttypes.h
 -
 mod_arith.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/mod_arith.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/mod_arith.h
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/utils.c
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/utils.c
 splittable_mrg.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/splittable_mrg.h
 graph_generator.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/graph_generator.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/graph_generator.h
 permutation_gen.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/permutation_gen.h
 stdint.h
 -
 assert.h
@@ -162,7 +162,7 @@ mpi.h
 omp.h
 -
 utils.h
-/Users/azad-admin/Documents/Projects/hipmcl/src/CombBLAS/graph500-1.2/generator/utils.h
+/global/homes/r/roguzsel/zzz/hipmcl-cleanup/hipmcl-sanitization/src/CombBLAS/graph500-1.2/generator/utils.h
 
 src/CombBLAS/graph500-1.2/generator/include/graph500/generator/apply_permutation_mpi.h
 stdint.h

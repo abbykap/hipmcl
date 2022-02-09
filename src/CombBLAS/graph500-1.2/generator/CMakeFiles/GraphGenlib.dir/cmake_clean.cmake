@@ -1,14 +1,14 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/GraphGenlib.dir/btrd_binomial_distribution.o"
-  "CMakeFiles/GraphGenlib.dir/splittable_mrg.o"
-  "CMakeFiles/GraphGenlib.dir/mrg_transitions.o"
-  "CMakeFiles/GraphGenlib.dir/graph_generator.o"
-  "CMakeFiles/GraphGenlib.dir/permutation_gen.o"
-  "CMakeFiles/GraphGenlib.dir/make_graph.o"
-  "CMakeFiles/GraphGenlib.dir/utils.o"
-  "CMakeFiles/GraphGenlib.dir/scramble_edges.o"
-  "libGraphGenlib.pdb"
+  "CMakeFiles/GraphGenlib.dir/btrd_binomial_distribution.c.o"
+  "CMakeFiles/GraphGenlib.dir/graph_generator.c.o"
+  "CMakeFiles/GraphGenlib.dir/make_graph.c.o"
+  "CMakeFiles/GraphGenlib.dir/mrg_transitions.c.o"
+  "CMakeFiles/GraphGenlib.dir/permutation_gen.c.o"
+  "CMakeFiles/GraphGenlib.dir/scramble_edges.c.o"
+  "CMakeFiles/GraphGenlib.dir/splittable_mrg.c.o"
+  "CMakeFiles/GraphGenlib.dir/utils.c.o"
   "libGraphGenlib.a"
+  "libGraphGenlib.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

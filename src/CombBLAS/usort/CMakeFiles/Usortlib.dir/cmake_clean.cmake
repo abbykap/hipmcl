@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/Usortlib.dir/src/parUtils.o"
-  "CMakeFiles/Usortlib.dir/src/binUtils.o"
-  "libUsortlib.pdb"
+  "CMakeFiles/Usortlib.dir/src/binUtils.cpp.o"
+  "CMakeFiles/Usortlib.dir/src/parUtils.cpp.o"
   "libUsortlib.a"
+  "libUsortlib.pdb"
 )
 
 # Per-language clean rules from dependency scanning.
