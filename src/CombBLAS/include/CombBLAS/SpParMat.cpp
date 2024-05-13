@@ -2150,7 +2150,8 @@ SpParMat<IT,NT,DER> SpParMat<IT,NT,DER>::SubsRef_SR (const FullyDistVec<IT,IT> &
 			#ifdef SPREFDEBUG	
 			SpParHelper::Print("In place multiplication\n", commGrid->GetWorld());
 			#endif
-        		*this = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P, *this, false, true);	// clear the memory of *this
+                //*this = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P, *this, false, true);	// clear the memory of *this
+        		*this = Mult_AnXBn_Synch<PTBOOLNT, NT, DER>(P, *this, false, true);	// clear the memory of *this
 
 			//ostringstream outb;
 			//outb << "P_after_" << commGrid->myrank;
@@ -2158,14 +2159,17 @@ SpParMat<IT,NT,DER> SpParMat<IT,NT,DER>::SubsRef_SR (const FullyDistVec<IT,IT> &
 			//P.put(ofb);
 
 			P.Transpose();	
-       	 		*this = Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(*this, P, true, true);	// clear the memory of both *this and P
+                    //*this = Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(*this, P, true, true);	// clear the memory of both *this and P
+       	 		*this = Mult_AnXBn_Synch<PTNTBOOL, NT, DER>(*this, P, true, true);	// clear the memory of both *this and P
 			return SpParMat<IT,NT,DER>(commGrid);	// dummy return to match signature
 		}
 		else
 		{
-			PA = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P,*this);
+			//PA = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P,*this);
+			PA = Mult_AnXBn_Synch<PTBOOLNT, NT, DER>(P,*this);
 			P.Transpose();
-			return Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, P);
+			//return Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, P);
+			return Mult_AnXBn_Synch<PTNTBOOL, NT, DER>(PA, P);
 		}
 	}
 	else
@@ -2175,7 +2179,8 @@ SpParMat<IT,NT,DER> SpParMat<IT,NT,DER>::SubsRef_SR (const FullyDistVec<IT,IT> &
 		SpParMat<IT,bool,DER_IT> P (PSeq, commGrid);
 
 		// Do parallel matrix-matrix multiply
-        	PA = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P, *this);
+            //PA = Mult_AnXBn_DoubleBuff<PTBOOLNT, NT, DER>(P, *this);
+            PA = Mult_AnXBn_Synch<PTBOOLNT, NT, DER>(P, *this);
 	}	// P is destructed here
 #ifndef NDEBUG
 	PA.PrintInfo();
@@ -2237,12 +2242,14 @@ SpParMat<IT,NT,DER> SpParMat<IT,NT,DER>::SubsRef_SR (const FullyDistVec<IT,IT> &
 	Q.Transpose();	
 	if(inplace)
 	{
-       		*this = Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, Q, true, true);	// clear the memory of both PA and P
+               //*this = Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, Q, true, true);	// clear the memory of both PA and P
+       		*this = Mult_AnXBn_Synch<PTNTBOOL, NT, DER>(PA, Q, true, true);	// clear the memory of both PA and P
 		return SpParMat<IT,NT,DER>(commGrid);	// dummy return to match signature
 	}
 	else
 	{
-        	return Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, Q);
+            //return Mult_AnXBn_DoubleBuff<PTNTBOOL, NT, DER>(PA, Q);
+            return Mult_AnXBn_Synch<PTNTBOOL, NT, DER>(PA, Q);
 	}
 }
 
@@ -2642,6 +2649,64 @@ SpParMat<IT,NT,DER> SpParMat<IT,NT,DER>::PruneColumn(const FullyDistVec<IT,NT> &
     {
         return SpParMat<IT,NT,DER>(spSeq->PruneColumn(numacc.data(), __binary_op, inPlace), commGrid);
     }
+}
+
+template <class IT, class NT, class DER>
+template <class IRRELEVANT_NT>
+void SpParMat<IT,NT,DER>::PruneColumnByIndex(const FullyDistSpVec<IT,IRRELEVANT_NT>& ci)
+{
+    MPI_Comm World = ci.commGrid->GetWorld();
+    MPI_Barrier(World);
+
+    if (getncol() != ci.TotalLength())
+    {
+        std::ostringstream outs;
+        outs << "Cannot prune column-by-column, dimensions do not match" << std::endl;
+        outs << getncol() << " != " << ci.TotalLength() << std::endl;
+        SpParHelper::Print(outs.str());
+        MPI_Abort(MPI_COMM_WORLD, DIMMISMATCH);
+    }
+
+    if (!(*(getcommgrid()) == *(ci.getcommgrid())))
+    {
+        std::cout << "Grids are not comparable for PruneColumnByIndex" << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, GRIDMISMATCH);
+    }
+
+    MPI_Comm ColWorld = ci.commGrid->GetColWorld();
+    int diagneigh = ci.commGrid->GetComplementRank();
+
+    IT xlocnz = ci.getlocnnz();
+    IT xrofst = ci.RowLenUntil();
+    IT trxrofst;
+    IT trxlocnz = 0;
+
+    MPI_Sendrecv(&xrofst, 1, MPIType<IT>(), diagneigh, TROST, &trxrofst, 1, MPIType<IT>(), diagneigh, TROST, World, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(&xlocnz, 1, MPIType<IT>(), diagneigh, TRNNZ, &trxlocnz, 1, MPIType<IT>(), diagneigh, TRNNZ, World, MPI_STATUS_IGNORE);
+
+    std::vector<IT> trxinds(trxlocnz);
+
+    MPI_Sendrecv(ci.ind.data(), xlocnz, MPIType<IT>(), diagneigh, TRI, trxinds.data(), trxlocnz, MPIType<IT>(), diagneigh, TRI, World, MPI_STATUS_IGNORE);
+
+    std::transform(trxinds.data(), trxinds.data() + trxlocnz, trxinds.data(), std::bind2nd(std::plus<IT>(), trxrofst));
+
+    int colneighs, colrank;
+    MPI_Comm_size(ColWorld, &colneighs);
+    MPI_Comm_rank(ColWorld, &colrank);
+
+    std::vector<int> colnz(colneighs);
+    colnz[colrank] = trxlocnz;
+    MPI_Allgather(MPI_IN_PLACE, 1, MPI_INT, colnz.data(), 1, MPI_INT, ColWorld);
+    std::vector<int> dpls(colneighs, 0);
+    std::partial_sum(colnz.begin(), colnz.end()-1, dpls.begin()+1);
+    IT accnz = std::accumulate(colnz.begin(), colnz.end(), 0);
+
+    std::vector<IT> indacc(accnz);
+    MPI_Allgatherv(trxinds.data(), trxlocnz, MPIType<IT>(), indacc.data(), colnz.data(), dpls.data(), MPIType<IT>(), ColWorld);
+
+    std::sort(indacc.begin(), indacc.end());
+
+    spSeq->PruneColumnByIndex(indacc);
 }
 
 
@@ -4844,6 +4909,144 @@ void SpParMat<IT,NT,DER>::Find (FullyDistVec<IT,IT> & distrows, FullyDistVec<IT,
 	DeleteAll(prelens, rows, cols, vals);
 	distrows = nrows;
 	distcols = ncols;
+}
+
+template <class IT, class NT, class DER>
+DER SpParMat<IT,NT,DER>::InducedSubgraphs2Procs(const FullyDistVec<IT,IT>& Assignments, std::vector<IT>& LocalIdxs) const
+{
+    int nprocs = commGrid->GetSize();
+    int myrank = commGrid->GetRank();
+    int nverts = getnrow();
+
+    if (nverts != getncol()) {
+        SpParHelper::Print("Number of rows and columns differ, not allowed for graphs!\n");
+        MPI_Abort(MPI_COMM_WORLD, DIMMISMATCH);
+    }
+
+    if (nverts != Assignments.TotalLength()) {
+        SpParHelper::Print("Assignments vector length does not match number of vertices!\n");
+        MPI_Abort(MPI_COMM_WORLD, DIMMISMATCH);
+    }
+
+    IT maxproc = Assignments.Reduce(maximum<IT>(), static_cast<IT>(0));
+
+    if (maxproc >= static_cast<IT>(nprocs)) {
+        SpParHelper::Print("Assignments vector assigns to process not not in this group!\n");
+        MPI_Abort(MPI_COMM_WORLD, INVALIDPARAMS);
+    }
+
+    MPI_Comm World = commGrid->GetWorld();
+    MPI_Comm RowWorld = commGrid->GetRowWorld();
+    MPI_Comm ColWorld = commGrid->GetColWorld();
+
+    int rowneighs, rowrank;
+    MPI_Comm_size(RowWorld, &rowneighs);
+    MPI_Comm_rank(RowWorld, &rowrank);
+
+
+    int mylocsize = Assignments.LocArrSize();
+    std::vector<int> rowvecs_counts(rowneighs, 0);
+    std::vector<int> rowvecs_displs(rowneighs, 0);
+
+    rowvecs_counts[rowrank] = mylocsize;
+
+    MPI_Allgather(MPI_IN_PLACE, 0, MPI_INT, rowvecs_counts.data(), 1, MPI_INT, RowWorld);
+
+    /* TODO GRGR: make this resilent if displacements don't fit 32 bits */
+
+    std::partial_sum(rowvecs_counts.begin(), rowvecs_counts.end()-1, rowvecs_displs.begin()+1);
+    size_t rowvecs_size = std::accumulate(rowvecs_counts.begin(), rowvecs_counts.end(), static_cast<size_t>(0));
+
+    std::vector<IT> rowvecs(rowvecs_size);
+
+    MPI_Allgatherv(Assignments.GetLocArr(), mylocsize, MPIType<IT>(), rowvecs.data(), rowvecs_counts.data(), rowvecs_displs.data(), MPIType<IT>(), RowWorld);
+
+    int complement_rank = commGrid->GetComplementRank();
+    int complement_rowvecs_size = 0;
+
+    MPI_Sendrecv(&rowvecs_size, 1, MPI_INT,
+                 complement_rank, TRX,
+                 &complement_rowvecs_size, 1, MPI_INT,
+                 complement_rank, TRX,
+                 World, MPI_STATUS_IGNORE);
+
+    std::vector<IT> complement_rowvecs(complement_rowvecs_size);
+
+    MPI_Sendrecv(rowvecs.data(), rowvecs_size, MPIType<IT>(),
+                 complement_rank, TRX,
+                 complement_rowvecs.data(), complement_rowvecs_size, MPIType<IT>(),
+                 complement_rank, TRX,
+                 World, MPI_STATUS_IGNORE);
+
+    std::vector<std::vector<std::tuple<IT,IT,NT>>> svec(nprocs);
+
+    std::vector<int> sendcounts(nprocs, 0);
+    std::vector<int> recvcounts(nprocs, 0);
+    std::vector<int> sdispls(nprocs, 0);
+    std::vector<int> rdispls(nprocs, 0);
+
+    int sbuflen = 0;
+
+    IT row_offset, col_offset;
+    GetPlaceInGlobalGrid(row_offset, col_offset);
+
+    for (auto colit = spSeq->begcol(); colit != spSeq->endcol(); ++colit) {
+        IT destproc = complement_rowvecs[colit.colid()];
+        if (destproc != -1)
+            for (auto nzit = spSeq->begnz(colit); nzit != spSeq->endnz(colit); ++nzit) {
+                if (destproc == rowvecs[nzit.rowid()]) {
+                    svec[destproc].emplace_back(row_offset + nzit.rowid(), col_offset + colit.colid(), nzit.value());
+                    sendcounts[destproc]++;
+                    sbuflen++;
+                }
+            }
+    }
+
+    MPI_Alltoall(sendcounts.data(), 1, MPI_INT, recvcounts.data(), 1, MPI_INT, World);
+
+    size_t rbuflen = std::accumulate(recvcounts.begin(), recvcounts.end(), static_cast<size_t>(0));
+
+    std::partial_sum(sendcounts.begin(), sendcounts.end()-1, sdispls.begin()+1);
+    std::partial_sum(recvcounts.begin(), recvcounts.end()-1, rdispls.begin()+1);
+
+    std::tuple<IT,IT,NT> *sbuf = new std::tuple<IT,IT,NT>[sbuflen];
+    std::tuple<IT,IT,NT> *rbuf = new std::tuple<IT,IT,NT>[rbuflen];
+
+    for (int i = 0; i < nprocs; ++i)
+        std::copy(svec[i].begin(), svec[i].end(), sbuf + sdispls[i]);
+
+
+    MPI_Alltoallv(sbuf, sendcounts.data(), sdispls.data(), MPIType<std::tuple<IT,IT,NT>>(), rbuf, recvcounts.data(), rdispls.data(), MPIType<std::tuple<IT,IT,NT>>(), World);
+
+    delete[] sbuf;
+
+    LocalIdxs.clear();
+    LocalIdxs.shrink_to_fit();
+
+    std::unordered_map<IT, IT> locmap;
+
+    IT new_id = 0;
+    IT global_ids[2];
+
+    for (int i = 0; i < rbuflen; ++i) {
+        global_ids[0] = std::get<0>(rbuf[i]);
+        global_ids[1] = std::get<1>(rbuf[i]);
+        for (int j = 0; j < 2; ++j) {
+            if (locmap.find(global_ids[j]) == locmap.end()) {
+                locmap.insert(std::make_pair(global_ids[j], new_id++));
+                LocalIdxs.push_back(global_ids[j]);
+            }
+        }
+        std::get<0>(rbuf[i]) = locmap[global_ids[0]];
+        std::get<1>(rbuf[i]) = locmap[global_ids[1]];
+    }
+
+    IT localdim = LocalIdxs.size();
+
+    DER LocalMat;
+    LocalMat.Create(rbuflen, localdim, localdim, rbuf);
+
+    return LocalMat;
 }
 
 template <class IT, class NT, class DER>

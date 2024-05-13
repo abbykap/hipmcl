@@ -271,7 +271,6 @@ void ProcessParam(int argc, char* argv[], HipMCLParam & param)
         } else if (strcmp(argv[i],"-pct")==0){
             param.recover_pct = atof(argv[i + 1]);
             if(param.recover_pct>1) param.recover_pct/=100.00;
-
         } else if (strcmp(argv[i],"-base")==0) {
             param.base = atoi(argv[i + 1]);
         }
@@ -769,6 +768,7 @@ void MainBody(HipMCLParam & param)
     
     if(param.isInputMM)
         WriteMCLClusters(param.ofilename, culstLabels, param.base);
+        //WriteMCLClusters(param.ofilename, culstLabels, 0);
     else
         WriteMCLClusters(param.ofilename, culstLabels, vtxLabels);
     

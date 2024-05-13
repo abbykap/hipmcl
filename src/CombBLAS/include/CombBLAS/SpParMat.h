@@ -105,6 +105,8 @@ public:
 	void Find (FullyDistVec<IT,IT> & , FullyDistVec<IT,IT> & , FullyDistVec<IT,NT> & ) const;
 	void Find (FullyDistVec<IT,IT> & , FullyDistVec<IT,IT> & ) const;
 
+	DER InducedSubgraphs2Procs(const FullyDistVec<IT,IT>& Assignments, std::vector<IT>& LocalIdxs) const;
+
 	template <typename _BinaryOperation>
 	void DimApply(Dim dim, const FullyDistVec<IT, NT>& v, _BinaryOperation __binary_op);
 
@@ -185,13 +187,16 @@ public:
 			return SpParMat<IT,NT,DER>(spSeq->Prune(__unary_op, inPlace), commGrid);
 		}
 	}
-    
+
     template <typename _BinaryOperation>
     SpParMat<IT,NT,DER> PruneColumn(const FullyDistVec<IT,NT> & pvals, _BinaryOperation __binary_op, bool inPlace=true);
-    
+
     template <typename _BinaryOperation>
     SpParMat<IT,NT,DER> PruneColumn(const FullyDistSpVec<IT,NT> & pvals, _BinaryOperation __binary_op, bool inPlace=true);
-    
+
+    template <typename IRRELEVANT_NT>
+    void PruneColumnByIndex(const FullyDistSpVec<IT,IRRELEVANT_NT>& ci);
+
 	template <typename _BinaryOperation>
 	void UpdateDense(DenseParMat<IT, NT> & rhs, _BinaryOperation __binary_op) const;
 
@@ -349,6 +354,10 @@ public:
     template <typename SR, typename NUO, typename UDERO, typename IU, typename NU1, typename NU2, typename UDERA, typename UDERB>
     friend SpParMat<IU,NUO,UDERO> MemEfficientSpGEMM (SpParMat<IU,NU1,UDERA> & A, SpParMat<IU,NU2,UDERB> & B,
                                                int phases, NUO hardThreshold, IU selectNum, IU recoverNum, NUO recoverPct, int kselectVersion, int computationKernel, int64_t perProcessMem);
+
+    template <typename SR, typename ITA, typename NTA, typename DERA>
+    friend SpParMat<ITA, NTA, DERA> IncrementalMCLSquare (SpParMat<ITA, NTA, DERA> & A,
+                                               int phases, NTA hardThreshold, NTA selectNum, ITA recoverNum, NTA recoverPct, int kselectVersion, int computationKernel, int64_t perProcessMem);
 
     template <typename SR, typename NUO, typename UDERO, typename IU, typename NU1, typename NU2, typename UDERA, typename UDERB>
     friend int CalculateNumberOfPhases (SpParMat<IU,NU1,UDERA> & A, SpParMat<IU,NU2,UDERB> & B,
