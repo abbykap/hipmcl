@@ -1,3 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=hipmcl_job
+#SBATCH --output=output.txt
+#SBATCH --error=error.txt
+#SBATCH --time=00:10:00
+#SBATCH --partition=batch
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
+#SBATCH -A gen150
 
 HIPMCL_EXE=../../bin/hipmcl
 IN_FILE=../../data/sevenvertex.triples
@@ -8,7 +17,7 @@ OUT_FILE=../../data/sevenvertex.triples.hipmcl
 
 # using labeled triples format
 export OMP_NUM_THREADS=1
-mpirun -np 4 $HIPMCL_EXE -M $IN_FILE -I 2 -per-process-mem 2 -o $OUT_FILE
+srun -np 4 $HIPMCL_EXE -M $IN_FILE -I 2 -per-process-mem 2 -o $OUT_FILE
 
 # using matrix market format
 #IN_FILE=../../data/sevenvertex.mtx
